@@ -184,3 +184,37 @@ WHERE
         SELECT 1 FROM compilationtrack ct
         WHERE ct.compilation_id = c.id AND ct.track_id = t.id
     );
+
+-- Добавляем тестовый альбом
+INSERT INTO albums (title, release_year)
+SELECT 'Test Vocabulary', 2023
+WHERE NOT EXISTS (SELECT 1 FROM albums WHERE title = 'Test Vocabulary');
+
+-- Добавляем тестовые треки
+INSERT INTO tracks (title, duration, album_id)
+SELECT v.title, v.duration, a.id
+FROM (VALUES
+    -- Правильные (должны найтись)
+    ('my own', 180),
+    ('own my', 180),
+    ('my', 180),
+    ('oh my god', 180),
+    ('мой друг', 180),
+    ('это мой', 180),
+    ('мой', 180),
+    ('вот мой дом', 180),
+    -- Неправильные (НЕ должны найтись)
+    ('myself', 180),
+    ('by myself', 180),
+    ('bemy self', 180),
+    ('myself by', 180),
+    ('by myself by', 180),
+    ('beemy', 180),
+    ('premyne', 180)
+) AS v(title, duration)
+CROSS JOIN albums a
+WHERE a.title = 'Test Vocabulary'
+  AND NOT EXISTS (
+      SELECT 1 FROM tracks t2
+      WHERE t2.album_id = a.id AND t2.title = v.title
+  );
